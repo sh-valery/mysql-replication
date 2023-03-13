@@ -2,7 +2,7 @@
 create database ewallet;
 create table ewallet.account
 (
-    username  varchar(64) not null,
+    username  varchar(64) not null primary key,
     balance_micro long null,
     updated_at datetime default current_timestamp on update current_timestamp
 );
