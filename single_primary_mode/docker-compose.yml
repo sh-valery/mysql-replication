@@ -1,0 +1,54 @@
+# mysql cluster in Single-Primary Mode
+# run 1 master and 2 slave replicas
+
+
+volumes:
+  mysql_volume:
+
+networks:
+  db:
+
+services:
+  mysql-master:
+    image: mysql
+    ports:
+      - "3306:3306"
+    restart: always
+    volumes:
+      - mysql_volume:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_USER: root
+      MYSQL_ROOT_PASSWORD: pass
+    networks:
+      - db
+
+
+  mysql-slave1:
+    image: mysql
+    ports:
+      - "3307:3306"
+    restart: always
+    volumes:
+      - mysql_volume:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_USER: root
+      MYSQL_ROOT_PASSWORD: pass
+    networks:
+      - db
+    depends_on:
+      - mysql-master
+
+  mysql-slave2:
+    image: mysql
+    ports:
+      - "3308:3306"
+    restart: always
+    volumes:
+      - mysql_volume:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_USER: root
+      MYSQL_ROOT_PASSWORD: pass
+    networks:
+      - db
+    depends_on:
+      - mysql-master
