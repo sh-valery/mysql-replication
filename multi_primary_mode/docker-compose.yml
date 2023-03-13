@@ -1,0 +1,40 @@
+# mysql cluster in Multi-Primary Mode
+
+volumes:
+  mysql_master_first_volume:
+  mysql_master_second_volume:
+
+networks:
+  db:
+
+services:
+  mysql-master1:
+    image: mysql
+    ports:
+      - "3306:3306"
+    restart: always
+    volumes:
+      - mysql_master_first_volume:/var/lib/mysql
+      - ./master.cnf:/etc/my.cnf
+    environment:
+      MYSQL_ROOT_USER: root
+      MYSQL_ROOT_PASSWORD: pass
+    networks:
+      - db
+
+
+  mysql-master2:
+    image: mysql
+    ports:
+      - "3307:3306"
+    restart: always
+    volumes:
+      - mysql_master_second_volume:/var/lib/mysql
+      - ./slave.cnf:/etc/my.cnf
+    environment:
+      MYSQL_ROOT_USER: root
+      MYSQL_ROOT_PASSWORD: pass
+    networks:
+      - db
+    depends_on:
+      - mysql-master
