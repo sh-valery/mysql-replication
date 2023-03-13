@@ -5,29 +5,33 @@ master_container="single_primary_mode_mysql-master_1"
 slave_first="single_primary_mode_mysql-slave1_1"
 slave_second="single_primary_mode_mysql-slave2_1"
 
-# check master is available
-check_availability_request='select 1'
-master_status=`docker exec $master_container sh -c "mysql -u root -ppass -s -e '$check_availability_request'"`
-if [ "master_status" != "1" ]; then
-    echo "Master is not available"
-    exit 1
-fi
 
 # create user for slave in master
-create_slave_request='CREATE USER "slave_user"@"%" IDENTIFIED BY "slave_pass"; GRANT REPLICATION SLAVE ON *.* TO "slave_user"@"%"; FLUSH PRIVILEGES;'
-
+create_slave_request='create user "slave_user"@"%" identified by "slave_pass"; grant replication slave on *.* to "slave_user"@"%"; flush privileges;'
 docker exec $master_container sh -c "mysql -u root -ppass -e '$create_slave_request '"
+echo "slave_user was created"
+
 
 check_privilege_request='select User, Repl_slave_priv from mysql.user where User="slave_user"'
 docker exec $master_container sh -c "mysql -u root -ppass -e '$check_privilege_request '"
+echo "slave_user privileged was set"
+
+echo "waiting for 15 seconds, enable replication"
+sleep 15
 
 # get master status
-MS_STATUS=`docker exec $master_container sh -c 'mysql -u root -ppass -e "SHOW MASTER STATUS"'`
-CURRENT_LOG=`echo $MS_STATUS | awk 'NR==2{print $1}'`
-CURRENT_POS=`echo $MS_STATUS | awk 'NR==2{print $2}'`
+ms_status=$(docker exec $master_container sh -c 'mysql -u root -ppass -e "SHOW MASTER STATUS"')
+current_log=$(echo "$ms_status" | awk 'NR==2{print $1}')
+current_pos=$(echo "$ms_status" | awk 'NR==2{print $2}')
+echo "Current log file: $current_log"
+echo "Current log pos: $current_pos"
 
 # set slave
-sql_set_master="CHANGE MASTER TO MASTER_HOST='mysql-master',MASTER_USER='slave_user',MASTER_PASSWORD='slave_pass',MASTER_LOG_FILE='$CURRENT_LOG',MASTER_LOG_POS=$CURRENT_POS; START SLAVE;"
+sql_set_master="change master to master_host='mysql-master',master_user='slave_user',master_password='slave_pass',master_log_file='$current_log',master_log_pos=$current_pos; start slave;"
 docker exec $slave_first sh -c "mysql -u root -ppass -e \"$sql_set_master\""
 
 docker exec $slave_first sh -c "mysql -u root -ppass -e 'SHOW SLAVE STATUS \G'"
+
+# use for experiments with consistency
+# docker exec $slave_first sh -c "mysql -u root -ppass -e 'stop slave;'"
+# docker exec $slave_first sh -c "mysql -u root -ppass -e 'start slave;'"

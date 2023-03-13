@@ -18,3 +18,17 @@ docker-compose up -d
 cd multi_primary_mode
 docker-compose up -d
 ```
+
+
+# Experiment
+
+## Create account table 
+    
+    ```sql
+create table ewallet.account
+(
+username  int not null,
+balance_micro long null,
+updated_at datetime default current_timestamp on update current_timestamp
+);
+```
